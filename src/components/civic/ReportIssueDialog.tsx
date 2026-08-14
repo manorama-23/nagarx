@@ -21,7 +21,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { distanceMeters, getPosition, type Scope } from "@/lib/civic";
+import { computeBrowserImageHash, getHammingDistance } from "@/lib/imageHash";
 import { cn } from "@/lib/utils";
+
+// Explicit type to eliminate any TypeScript property errors
+interface IssueItem {
+  id: string;
+  title: string;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  scope: string;
+  image_hash?: string | null;
+}
 
 const schema = z.object({
   title: z.string().trim().min(6, "Give the issue a clear title").max(120),
@@ -44,17 +56,17 @@ export function ReportIssueDialog() {
   const canChooseScope = profile?.role === "student" || profile?.role === "institute_admin";
   const [scope, setScope] = useState<Scope>(canChooseScope ? "institute" : "civic");
 
-  const { data: openIssues } = useQuery({
+  const { data: openIssues } = useQuery<IssueItem[]>({
     queryKey: ["open-grievances-dedupe"],
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("grievances")
-        .select("id,title,lat,lng,status,scope")
+        .select("id,title,lat,lng,status,scope,image_hash")
         .neq("status", "resolved")
         .limit(500);
       if (error) throw error;
-      return data;
+      return (data ?? []) as unknown as IssueItem[];
     },
   });
 
@@ -62,7 +74,11 @@ export function ReportIssueDialog() {
     if (!coords || !openIssues) return null;
     return (
       openIssues.find(
-        (g) => g.scope === scope && distanceMeters(coords, { lat: g.lat, lng: g.lng }) <= 150,
+        (g) =>
+          g.scope === scope &&
+          g.lat != null &&
+          g.lng != null &&
+          distanceMeters(coords, { lat: g.lat, lng: g.lng }) <= 150,
       ) ?? null
     );
   }, [coords, openIssues, scope]);
@@ -82,7 +98,31 @@ export function ReportIssueDialog() {
       const point = coords ?? (await getPosition());
 
       let imageUrl: string | null = null;
+      let computedHash: string | null = null;
+
+      // 1. Calculate Perceptual Hash and Check for Duplicate Image
       if (file) {
+        computedHash = await computeBrowserImageHash(file);
+
+        if (openIssues && openIssues.length > 0) {
+          const duplicate = openIssues.find((issue: IssueItem) => {
+            const hashDiff = getHammingDistance(computedHash, issue.image_hash ?? null);
+            const dist =
+              issue.lat != null && issue.lng != null
+                ? distanceMeters(point, { lat: issue.lat, lng: issue.lng })
+                : 999999;
+
+            // Block if visually identical image (hashDiff <= 10) or nearby duplicate
+            return hashDiff <= 10 || (dist <= 150 && hashDiff <= 16);
+          });
+
+          if (duplicate) {
+            throw new Error(
+              `Duplicate detected! This issue has already been reported as "${duplicate.title}". Please upvote the existing report.`
+            );
+          }
+        }
+
         const path = `${session.user.id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]/g, "_")}`;
         const { error: upErr } = await supabase.storage
           .from("grievance-images")
@@ -91,6 +131,7 @@ export function ReportIssueDialog() {
         imageUrl = supabase.storage.from("grievance-images").getPublicUrl(path).data.publicUrl;
       }
 
+      // 2. Insert into Supabase with the image_hash
       const { error } = await supabase.from("grievances").insert({
         user_id: session.user.id,
         scope,
@@ -98,15 +139,18 @@ export function ReportIssueDialog() {
         title: parsed.data.title,
         description: parsed.data.description,
         image_url: imageUrl,
+        image_hash: computedHash,
         lat: point.lat,
         lng: point.lng,
         is_anonymous: anonymous,
-      });
+      } as any);
+
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Issue reported. Thanks for flagging it.");
       queryClient.invalidateQueries({ queryKey: ["grievances"] });
+      queryClient.invalidateQueries({ queryKey: ["open-grievances-dedupe"] });
       reset();
       setOpen(false);
     },
