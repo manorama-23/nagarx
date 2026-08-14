@@ -78,7 +78,7 @@ export function ReportIssueDialog() {
     mutationFn: async () => {
       if (!session) throw new Error("Sign in to report an issue.");
       const parsed = schema.safeParse({ title, description });
-      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check your input");
       const point = coords ?? (await getPosition());
 
       let imageUrl: string | null = null;
