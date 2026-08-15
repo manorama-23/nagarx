@@ -74,3 +74,25 @@ export function getPosition(): Promise<{ lat: number; lng: number }> {
     );
   });
 }
+
+export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
+  const trimmed = address.trim();
+  if (!trimmed) return null;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=1`;
+    const res = await fetch(url, {
+      headers: { "Accept-Language": "en" },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const first = data[0];
+    return {
+      lat: parseFloat(first.lat),
+      lng: parseFloat(first.lon),
+      displayName: first.display_name ?? trimmed,
+    };
+  } catch {
+    return null;
+  }
+}

@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { distanceMeters, getPosition, type Scope } from "@/lib/civic";
+import { distanceMeters, geocodeAddress, getPosition, type Scope } from "@/lib/civic";
 import { computeBrowserImageHash, getHammingDistance } from "@/lib/imageHash";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +53,9 @@ export function ReportIssueDialog() {
       ? { lat: profile.lat, lng: profile.lng }
       : null,
   );
+  const [addressInput, setAddressInput] = useState("");
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
   const canChooseScope = profile?.role === "student" || profile?.role === "institute_admin";
   const [scope, setScope] = useState<Scope>(canChooseScope ? "institute" : "civic");
 
@@ -88,6 +91,8 @@ export function ReportIssueDialog() {
     setDescription("");
     setFile(null);
     setAnonymous(false);
+    setAddressInput("");
+    setResolvedAddress(null);
   };
 
   const submit = useMutation({
@@ -252,7 +257,10 @@ export function ReportIssueDialog() {
                 className="gap-1.5"
                 onClick={async () => {
                   try {
-                    setCoords(await getPosition());
+                    const pos = await getPosition();
+                    setCoords(pos);
+                    setResolvedAddress(null);
+                    setAddressInput("");
                   } catch (err) {
                     toast.error((err as Error).message);
                   }
@@ -261,7 +269,65 @@ export function ReportIssueDialog() {
                 <LocateFixed className="size-3.5" /> Detect
               </Button>
             </div>
-            <MapPreview lat={coords?.lat ?? null} lng={coords?.lng ?? null} />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Enter an address, area, or landmark"
+                  value={addressInput}
+                  onChange={(e) => setAddressInput(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (!addressInput.trim()) return;
+                      setGeocoding(true);
+                      try {
+                        const result = await geocodeAddress(addressInput);
+                        if (result) {
+                          setCoords({ lat: result.lat, lng: result.lng });
+                          setResolvedAddress(result.displayName);
+                        } else {
+                          toast.error("Could not find that location. Try a different description.");
+                        }
+                      } finally {
+                        setGeocoding(false);
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  if (!addressInput.trim()) return;
+                  setGeocoding(true);
+                  try {
+                    const result = await geocodeAddress(addressInput);
+                    if (result) {
+                      setCoords({ lat: result.lat, lng: result.lng });
+                      setResolvedAddress(result.displayName);
+                    } else {
+                      toast.error("Could not find that location. Try a different description.");
+                    }
+                  } finally {
+                    setGeocoding(false);
+                  }
+                }}
+                disabled={geocoding || !addressInput.trim()}
+                className="shrink-0"
+              >
+                {geocoding ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
+              </Button>
+            </div>
+            <MapPreview
+              lat={coords?.lat ?? null}
+              lng={coords?.lng ?? null}
+              address={resolvedAddress ?? (addressInput.trim() ? addressInput.trim() : null)}
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
