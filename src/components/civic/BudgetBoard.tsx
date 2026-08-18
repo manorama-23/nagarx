@@ -62,7 +62,7 @@ export function BudgetBoard({ scopeFilter }: { scopeFilter: ScopeFilter }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const visible = proposals.filter((p) => scopeFilter === "all" || p.scope === scopeFilter);
+  const visible = proposals.filter((p) => p.scope === "civic");
   const totalVotes = Math.max(
     1,
     visible.reduce((sum, p) => sum + (p.votes_count ?? 0), 0),

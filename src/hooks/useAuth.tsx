@@ -26,34 +26,59 @@ const AuthContext = createContext<AuthValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileReady, setProfileReady] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        queryClient.invalidateQueries();
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+      } else if (event === "USER_UPDATED") {
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
       }
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      // Defer marking ready past StrictMode double-effect window
+      setTimeout(() => setProfileReady(true), 0);
     });
     return () => sub.subscription.unsubscribe();
   }, [queryClient]);
 
+  function isAbortLike(err: unknown): boolean {
+    if (err instanceof DOMException && err.name === "AbortError") return true;
+    const m = err instanceof Error ? err.message : String(err ?? "");
+    return /aborted|network_io_suspended|Failed to fetch|The user aborted|request to .* failed/i.test(m);
+  }
+
+  const userId = session?.user.id;
   const { data: profile } = useQuery({
-    queryKey: ["profile", session?.user.id],
-    enabled: !!session?.user.id,
+    queryKey: ["profile", userId],
+    enabled: !!userId && profileReady,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session!.user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId!)
+          .maybeSingle();
+        if (error) {
+          if (isAbortLike(error)) return null;
+          throw error;
+        }
+        return data;
+      } catch (e) {
+        if (isAbortLike(e)) return null;
+        throw e;
+      }
     },
+    staleTime: 120_000,
+    retry: 0,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
   });
 
   const value: AuthValue = {

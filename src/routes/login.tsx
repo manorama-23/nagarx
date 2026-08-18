@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,11 +27,29 @@ function LoginPage() {
   const { session } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (session) navigate({ to: "/", replace: true });
   }, [session, navigate]);
+
+  async function handleForgotPassword() {
+    if (!email) {
+      toast.error("Please enter your email address first to reset your password.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password reset email sent! Check your inbox.");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,14 +85,35 @@ function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Password</Label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-xs font-semibold text-primary underline-offset-4 hover:underline cursor-pointer bg-transparent border-0 p-0 text-[#001F5C] dark:text-[#38BDF8]"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
             <Button className="w-full" disabled={loading}>
               {loading && <Loader2 className="size-4 animate-spin" />} Sign in

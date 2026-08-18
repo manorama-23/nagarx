@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Loader2, LocateFixed } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,12 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPosition } from "@/lib/civic";
 import { cn } from "@/lib/utils";
 
-type Role = "student" | "citizen" | "institute_admin" | "municipality_admin";
+type Role = "citizen" | "municipality_admin";
 
 const roles: { key: Role; label: string }[] = [
-  { key: "student", label: "Student" },
   { key: "citizen", label: "Citizen" },
-  { key: "institute_admin", label: "Institute Authority" },
   { key: "municipality_admin", label: "Municipality Authority" },
 ];
 
@@ -34,7 +32,7 @@ export const Route = createFileRoute("/signup")({
       { title: "Create account — Civic Triage S36" },
       {
         name: "description",
-        content: "Join Civic Triage as a student, citizen, institute or municipality authority.",
+        content: "Join Civic Triage as a citizen or municipality authority.",
       },
       { property: "og:title", content: "Create account — Civic Triage S36" },
       { property: "og:description", content: "Report and resolve campus and civic issues." },
@@ -50,15 +48,33 @@ function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [institution, setInstitution] = useState("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const needsInstitution = role === "student" || role === "institute_admin";
+  const needsInstitution = false;
 
   useEffect(() => {
     if (session) navigate({ to: "/", replace: true });
   }, [session, navigate]);
+
+  async function handleForgotPassword() {
+    if (!email) {
+      toast.error("Please enter your email address first to reset your password.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password reset email sent! Check your inbox.");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,8 +93,9 @@ function SignupPage() {
           full_name: parsed.data.full_name,
           role,
           institution_name: needsInstitution ? institution.trim() || null : null,
-          lat: coords?.lat ?? null,
-          lng: coords?.lng ?? null,
+          location_name: location.trim() || null,
+          lat: null,
+          lng: null,
         },
       },
     });
@@ -141,14 +158,35 @@ function SignupPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Password</Label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-xs font-semibold text-primary underline-offset-4 hover:underline cursor-pointer bg-transparent border-0 p-0 text-[#001F5C] dark:text-[#38BDF8]"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
             {needsInstitution && (
               <div className="space-y-1.5">
@@ -163,26 +201,15 @@ function SignupPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={async () => {
-                  try {
-                    setCoords(await getPosition());
-                    toast.success("Location captured");
-                  } catch (err) {
-                    toast.error((err as Error).message);
-                  }
-                }}
-              >
-                <LocateFixed className="size-3.5" /> Detect My Location
-              </Button>
-              <span className="font-mono text-xs text-muted-foreground">
-                {coords ? `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}` : "not set"}
-              </span>
+            <div className="space-y-1.5">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                placeholder="e.g. Sector 36, Chandigarh"
+                maxLength={120}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
             </div>
 
             <Button className="w-full" disabled={loading}>

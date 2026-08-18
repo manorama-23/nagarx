@@ -39,9 +39,9 @@ export const statusLabel: Record<Status, string> = {
 };
 
 export const statusClass: Record<Status, string> = {
-  pending: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
-  in_progress: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
-  resolved: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+  pending: "bg-[#EF4444]/10 text-[#EF4444] dark:bg-[#EF4444]/15 dark:text-[#EF4444]",
+  in_progress: "bg-[#F59E0B]/10 text-[#F59E0B] dark:bg-[#F59E0B]/15 dark:text-[#F59E0B]",
+  resolved: "bg-[#10B981]/10 text-[#10B981] dark:bg-[#10B981]/15 dark:text-[#10B981]",
 };
 
 export const scopeLabel: Record<Scope, string> = {

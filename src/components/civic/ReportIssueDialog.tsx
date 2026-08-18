@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ImageUp, Loader2, LocateFixed, Plus } from "lucide-react";
+import { AlertCircle, ImageUp, Loader2, LocateFixed, Plus, Mic, MicOff, Languages } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,12 +40,293 @@ const schema = z.object({
   description: z.string().trim().min(15, "Add a little more detail").max(1000),
 });
 
-export function ReportIssueDialog() {
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "हिन्दी (Hindi)" },
+  { code: "ta", name: "தமிழ் (Tamil)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "or", name: "ଓଡ଼ିଆ (Odia)" },
+  { code: "mr", name: "मराठी (Marathi)" },
+] as const;
+
+type LangCode = typeof LANGUAGES[number]["code"];
+
+const TRANSLATIONS: Record<LangCode, {
+  title: string;
+  desc: string;
+  fieldTitle: string;
+  placeholderTitle: string;
+  fieldCategory: string;
+  fieldDescription: string;
+  placeholderDescription: string;
+  fieldPhoto: string;
+  placeholderPhoto: string;
+  fieldLocation: string;
+  btnDetect: string;
+  placeholderLocation: string;
+  fieldAnonymous: string;
+  descAnonymous: string;
+  btnSubmit: string;
+  btnSubmitting: string;
+  similarityAlert: string;
+  categories: Record<string, string>;
+}> = {
+  en: {
+    title: "Report an issue",
+    desc: "Reports are public and routed to the responsible authority.",
+    fieldTitle: "Title",
+    placeholderTitle: "Broken streetlight near Gate 3",
+    fieldCategory: "Category",
+    fieldDescription: "Description",
+    placeholderDescription: "What is wrong, since when, and who is affected?",
+    fieldPhoto: "Photo",
+    placeholderPhoto: "Drop or choose an image",
+    fieldLocation: "Location",
+    btnDetect: "Detect",
+    placeholderLocation: "Enter an address, area, or landmark",
+    fieldAnonymous: "Post anonymously",
+    descAnonymous: "Your name stays hidden publicly.",
+    btnSubmit: "Submit report",
+    btnSubmitting: "Submitting...",
+    similarityAlert: "A similar issue was recently reported nearby. You can upvote the existing report to boost its priority.",
+    categories: {
+      "Public Works": "Public Works",
+      "Sanitation": "Sanitation",
+      "Electrical": "Electrical",
+      "Water Utility": "Water Utility",
+      "Parks": "Parks",
+      "Others": "Others"
+    }
+  },
+  hi: {
+    title: "एक समस्या रिपोर्ट करें",
+    desc: "रिपोर्ट सार्वजनिक हैं और जिम्मेदार प्राधिकारी को भेजी जाती हैं।",
+    fieldTitle: "शीर्षक",
+    placeholderTitle: "गेट 3 के पास टूटी हुई स्ट्रीटलाइट",
+    fieldCategory: "श्रेणी",
+    fieldDescription: "विवरण",
+    placeholderDescription: "क्या गलत है, कब से है, और कौन प्रभावित है?",
+    fieldPhoto: "फोटो",
+    placeholderPhoto: "छवि चुनें या खींचें",
+    fieldLocation: "स्थान",
+    btnDetect: "खोजें",
+    placeholderLocation: "एक पता, क्षेत्र या मील का पत्थर दर्ज करें",
+    fieldAnonymous: "अनाम पोस्ट करें",
+    descAnonymous: "आपका नाम सार्वजनिक रूप से छिपा रहेगा।",
+    btnSubmit: "रिपोर्ट सबमिट करें",
+    btnSubmitting: "सबमिट हो रहा है...",
+    similarityAlert: "हाल ही में पास में एक समान समस्या की रिपोर्ट की गई थी। इसके महत्व को बढ़ाने के लिए आप इसे अपवोट कर सकते हैं।",
+    categories: {
+      "Public Works": "लोक निर्माण",
+      "Sanitation": "स्वच्छता",
+      "Electrical": "बिजली",
+      "Water Utility": "जल उपयोगिता",
+      "Parks": "पार्क",
+      "Others": "अन्य"
+    }
+  },
+  ta: {
+    title: "ஒரு சிக்கலைப் புகாரளிக்கவும்",
+    desc: "விவரங்கள் பொதுவானவை மற்றும் பொறுப்பான அதிகாரிக்கு அனுப்பப்படுகின்றன.",
+    fieldTitle: "தலைப்பு",
+    placeholderTitle: "கேட் 3 அருகில் உடைந்த தெருவிளக்கு",
+    fieldCategory: "வகை",
+    fieldDescription: "விளக்கம்",
+    placeholderDescription: "என்ன தவறு, எப்போது முதல், யார் பாதிக்கப்பட்டுள்ளனர்?",
+    fieldPhoto: "புகைப்படம்",
+    placeholderPhoto: "படம் தேர்ந்தெடுக்கவும் அல்லது இழுக்கவும்",
+    fieldLocation: "இடம்",
+    btnDetect: "கண்டறி",
+    placeholderLocation: "முகவரி, பகுதி அல்லது அடையாளத்தை உள்ளிடவும்",
+    fieldAnonymous: "அநாமதேயமாக பகிரவும்",
+    descAnonymous: "உங்கள் பெயர் பகிரங்கமாக மறைக்கப்படும்.",
+    btnSubmit: "புகாரைச் சமர்ப்பி",
+    btnSubmitting: "சமர்ப்பிக்கிறது...",
+    similarityAlert: "அண்மையில் அருகிலேயே இதேபோன்ற சிக்கல் ஒன்று புகாரளிக்கப்பட்டுள்ளது. அதன் முன்னுரிமையை அதிகரிக்க நீங்கள் அதை அப்வோட் செய்யலாம்.",
+    categories: {
+      "Public Works": "பொதுப்பணி",
+      "Sanitation": "சுகாதாரம்",
+      "Electrical": "மின்சாரம்",
+      "Water Utility": "நீர் பயன்பாடு",
+      "Parks": "பூங்காக்கள்",
+      "Others": "இதர"
+    }
+  },
+  te: {
+    title: "సమస్యను నివేదించండి",
+    desc: "నివేదికలు పబ్లిక్ మరియు బాధ్యతాయుతమైన అధికారికి పంపబడతాయి.",
+    fieldTitle: "శీర్షిక",
+    placeholderTitle: "గేట్ 3 దగ్గర విరిగిపోయిన వీధి దీపం",
+    fieldCategory: "వర్గం",
+    fieldDescription: "వివరణ",
+    placeholderDescription: "ఏమి తప్పు జరిగింది, ఎప్పటి నుండి, ఎవరు ప్రభావితమయ్యారు?",
+    fieldPhoto: "ఫోటో",
+    placeholderPhoto: "చిత్రాన్ని ఎంచుకోండి లేదా లాగండి",
+    fieldLocation: "స్థానం",
+    btnDetect: "గుర్తించండి",
+    placeholderLocation: "చిరునామా, ప్రాంతం లేదా మైలురాయిని నమోదు చేయండి",
+    fieldAnonymous: "అనామకంగా పోస్ట్ చేయండి",
+    descAnonymous: "మీ పేరు పబ్లిక్‌గా దాచబడుతుంది.",
+    btnSubmit: "నివేదికను సమర్పించండి",
+    btnSubmitting: "సమర్పిస్తోంది...",
+    similarityAlert: "ఇటేవల ఈ సమీపంలో ఇటువంటి సమస్య నివేదించబడింది. దాని ప్రాధాన్యతను పెంచడానికి మీరు దాన్ని అప్వోట్ చేయవచ్చు.",
+    categories: {
+      "Public Works": "పబ్లిక్ వర్క్స్",
+      "Sanitation": "సానిటేషన్",
+      "Electrical": "ఎలక్ట్రికల్",
+      "Water Utility": "వాటర్ యుటిలిటీ",
+      "Parks": "పార్కులు",
+      "Others": "ఇతరాలు"
+    }
+  },
+  or: {
+    title: "ସମସ୍ୟା ରିପୋର୍ଟ କରନ୍ତୁ",
+    desc: "ରିପୋର୍ଟଗୁଡିକ ସାର୍ବଜନୀନ ଏବଂ ଦାୟିତ୍ୱପୂର୍ଣ୍ଣ କର୍ତ୍ତୃପକ୍ଷଙ୍କ ନିକଟକୁ ପଠାଯାଇଥାଏ |",
+    fieldTitle: "ଶୀର୍ଷକ",
+    placeholderTitle: "ଗେଟ୍ ୩ ନିକଟରେ ଭାଙ୍ଗିଯାଇଥିବା ଷ୍ଟ୍ରିଟ୍‌ଲାଇଟ୍‌",
+    fieldCategory: "ବର୍ଗ",
+    fieldDescription: "ବର୍ଣ୍ଣନା",
+    placeholderDescription: "କଣ ଭୁଲ୍ ଅଛି, କେବେଠାରୁ ଏବଂ କିଏ ପ୍ରଭାବିତ ହୋଇଛନ୍ତି?",
+    fieldPhoto: "ଫଟୋ",
+    placeholderPhoto: "ଫଟୋ ବାଛନ୍ତୁ କିମ୍ବା ଡ୍ରପ୍ କରନ୍ତୁ",
+    fieldLocation: "ସ୍ଥାନ",
+    btnDetect: "ଖୋଜନ୍ତୁ",
+    placeholderLocation: "ଠିକଣା, ଅଞ୍ଚଳ କିମ୍ବା ସ୍ଥାନ ଚିହ୍ନଟ ପ୍ରବେଶ କରନ୍ତୁ",
+    fieldAnonymous: "ଅଜ୍ଞାତ ଭାବରେ ପୋଷ୍ଟ କରନ୍ତୁ",
+    descAnonymous: "ଆପଣଙ୍କର ନାମ ସାର୍ବଜନୀନ ଭାବରେ ଲୁଚି ରହିବ |",
+    btnSubmit: "ରିପୋର୍ଟ ଦାଖଲ କରନ୍ତୁ",
+    btnSubmitting: "ଦାଖଲ ହେଉଛି...",
+    similarityAlert: "ନିକଟରେ ଏକ ସମାନ ସମସ୍ୟା ରିପୋର୍ଟ କରାଯାଇଛି। ଆପଣ ଏହି ରିପୋର୍ଟକୁ ଅପଭୋଟ୍ କରିପାରିବେ।",
+    categories: {
+      "Public Works": "ଲୋକସେବା କାର୍ଯ୍ୟ",
+      "Sanitation": "ସଫେଇ",
+      "Electrical": "ବିଦ୍ୟୁତ",
+      "Water Utility": "ଜଳ ଯୋଗାଣ",
+      "Parks": "ପାର୍କ",
+      "Others": "ଅନ୍ୟାନ୍ୟ"
+    }
+  },
+  mr: {
+    title: "समस्या नोंदवा",
+    desc: "तक्रारी सार्वजनिक आहेत आणि संबंधित प्राधिकरणाकडे पाठविल्या जातात.",
+    fieldTitle: "शीर्षक",
+    placeholderTitle: "गेट ३ जवळ बंद असलेला पथदिवा",
+    fieldCategory: "वर्ग / श्रेणी",
+    fieldDescription: "वर्णन",
+    placeholderDescription: "काय अडचण आहे, कधीपासून आहे आणि कोणावर परिणाम झाला आहे?",
+    fieldPhoto: "फोटो",
+    placeholderPhoto: "फोटो अपलोड करा किंवा ड्रॅग करा",
+    fieldLocation: "ठिकाण",
+    btnDetect: "शोधून काढा",
+    placeholderLocation: "पत्ता किंवा खुणेची जागा प्रविष्ट करा",
+    fieldAnonymous: "अनामिकपणे पोस्ट करा",
+    descAnonymous: "तुमचे नाव सार्वजनिकरित्या लपवले जाईल.",
+    btnSubmit: "तक्रार सबमिट करा",
+    btnSubmitting: "सबमिट होत आहे...",
+    similarityAlert: "नुकतीच जवळच अशाच प्रकारच्या समस्येची नोंद झाली आहे. प्राधान्य वाढवण्यासाठी आपण त्याला अपव्होट करू शकता.",
+    categories: {
+      "Public Works": "सार्वजनिक बांधकाम",
+      "Sanitation": "स्वच्छता",
+      "Electrical": "विद्युत",
+      "Water Utility": "पाणी पुरवठा",
+      "Parks": "उद्याने / मार्ग",
+      "Others": "इतर"
+    }
+  }
+};
+
+export function ReportIssueDialog({
+  open: openProp,
+  onOpenChange,
+  trigger = true,
+}: {
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  trigger?: boolean;
+}) {
   const { session, profile } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openProp ?? openInternal;
+  const setOpen = (v: boolean) => {
+    setOpenInternal(v);
+    onOpenChange?.(v);
+  };
+  const [lang, setLang] = useState<LangCode>("en");
+  const [listening, setListening] = useState(false);
+  const t = TRANSLATIONS[lang];
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+  const toggleListening = () => {
+    if (!SpeechRecognition) {
+      toast.error("Voice-to-text is not supported by your browser. Try using Google Chrome.");
+      return;
+    }
+
+    if (listening) {
+      const activeRec = (window as any).activeSpeechRecognition;
+      if (activeRec) {
+        activeRec.stop();
+      }
+      setListening(false);
+    } else {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang =
+          lang === "hi"
+            ? "hi-IN"
+            : lang === "ta"
+              ? "ta-IN"
+              : lang === "te"
+                ? "te-IN"
+                : lang === "or"
+                  ? "or-IN"
+                  : lang === "mr"
+                    ? "mr-IN"
+                    : "en-US";
+
+        recognition.onstart = () => {
+          setListening(true);
+          toast("Listening... Speak into your microphone.");
+        };
+
+        recognition.onresult = (event: any) => {
+          const speechToText = event.results[0]?.[0]?.transcript;
+          if (speechToText) {
+            setDescription((prev) => (prev ? prev + " " + speechToText : speechToText));
+            toast.success("Voice input added!");
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error("Speech recognition error", event.error);
+          if (event.error !== "no-speech") {
+            toast.error(`Voice error: ${event.error}`);
+          }
+          setListening(false);
+        };
+
+        recognition.onend = () => {
+          setListening(false);
+          (window as any).activeSpeechRecognition = null;
+        };
+
+        (window as any).activeSpeechRecognition = recognition;
+        recognition.start();
+      } catch (err: any) {
+        toast.error(`Could not start speech recognition: ${err.message}`);
+        setListening(false);
+      }
+    }
+  };
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Public Works");
   const [file, setFile] = useState<File | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
@@ -86,9 +367,12 @@ export function ReportIssueDialog() {
     );
   }, [coords, openIssues, scope]);
 
+  const CATEGORIES = ["Public Works", "Sanitation", "Electrical", "Water Utility", "Parks", "Others"] as const;
+
   const reset = () => {
     setTitle("");
     setDescription("");
+    setCategory("Public Works");
     setFile(null);
     setAnonymous(false);
     setAddressInput("");
@@ -143,6 +427,7 @@ export function ReportIssueDialog() {
         institution_name: scope === "institute" ? (profile?.institution_name ?? null) : null,
         title: parsed.data.title,
         description: parsed.data.description,
+        category,
         image_url: imageUrl,
         image_hash: computedHash,
         lat: point.lat,
@@ -164,17 +449,35 @@ export function ReportIssueDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="size-4" /> Report Issue
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Report an issue</DialogTitle>
-          <DialogDescription>
-            Reports are public and routed to the responsible authority.
-          </DialogDescription>
+      {trigger && (
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-1.5">
+            <Plus className="size-4" /> Report Issue
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <DialogTitle>{t.title}</DialogTitle>
+            <DialogDescription>
+              {t.desc}
+            </DialogDescription>
+          </div>
+          <div className="flex items-center gap-1.5 border border-border rounded-lg px-2.5 py-1 bg-secondary/35 text-xs text-muted-foreground mr-6 shrink-0">
+            <Languages className="size-3.5" />
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as LangCode)}
+              className="bg-transparent border-0 outline-none text-xs font-semibold cursor-pointer text-foreground pr-1"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -200,43 +503,87 @@ export function ReportIssueDialog() {
             <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               <p>
-                A similar issue was recently reported nearby (&ldquo;{nearby.title}&rdquo;). You
-                can upvote the existing report to boost its priority.
+                {t.similarityAlert} (&ldquo;{nearby.title}&rdquo;)
               </p>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t.fieldTitle}</Label>
             <Input
               id="title"
               value={title}
               maxLength={120}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Broken streetlight near Gate 3"
+              placeholder={t.placeholderTitle}
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>{t.fieldCategory}</Label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={cn(
+                    "rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    category === cat
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {t.categories[cat] || cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="description">Description</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description">{t.fieldDescription}</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 gap-1 px-2 text-xs rounded-full border border-dashed transition-all",
+                  listening
+                    ? "bg-red-50 text-red-600 border-red-200 animate-pulse hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/50"
+                    : "text-muted-foreground hover:bg-accent border-border"
+                )}
+                onClick={toggleListening}
+              >
+                {listening ? (
+                  <>
+                    <MicOff className="size-3.5 animate-bounce" /> Stop (Listening...)
+                  </>
+                ) : (
+                  <>
+                    <Mic className="size-3.5" /> Voice Input
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="description"
               rows={4}
               maxLength={1000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What is wrong, since when, and who is affected?"
+              placeholder={t.placeholderDescription}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="photo">Photo</Label>
+            <Label htmlFor="photo">{t.fieldPhoto}</Label>
             <label
               htmlFor="photo"
               className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted-foreground transition-colors hover:bg-accent"
             >
               <ImageUp className="size-4" />
-              {file ? file.name : "Drop or choose an image"}
+              {file ? file.name : t.placeholderPhoto}
             </label>
             <input
               id="photo"
@@ -249,7 +596,7 @@ export function ReportIssueDialog() {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label>Location</Label>
+              <Label>{t.fieldLocation}</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -266,13 +613,13 @@ export function ReportIssueDialog() {
                   }
                 }}
               >
-                <LocateFixed className="size-3.5" /> Detect
+                <LocateFixed className="size-3.5" /> {t.btnDetect}
               </Button>
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
                 <Input
-                  placeholder="Enter an address, area, or landmark"
+                  placeholder={t.placeholderLocation}
                   value={addressInput}
                   onChange={(e) => setAddressInput(e.target.value)}
                   onKeyDown={async (e) => {
@@ -332,8 +679,8 @@ export function ReportIssueDialog() {
 
           <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium">Post anonymously</p>
-              <p className="text-xs text-muted-foreground">Your name stays hidden publicly.</p>
+              <p className="text-sm font-medium">{t.fieldAnonymous}</p>
+              <p className="text-xs text-muted-foreground">{t.descAnonymous}</p>
             </div>
             <Switch checked={anonymous} onCheckedChange={setAnonymous} />
           </div>
@@ -344,7 +691,7 @@ export function ReportIssueDialog() {
             onClick={() => submit.mutate()}
           >
             {submit.isPending && <Loader2 className="size-4 animate-spin" />}
-            Submit report
+            {submit.isPending ? t.btnSubmitting : t.btnSubmit}
           </Button>
         </div>
       </DialogContent>
