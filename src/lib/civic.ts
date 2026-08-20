@@ -20,15 +20,35 @@ export function formatDistance(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 }
 
-export function timeAgo(iso: string): string {
+const TIME_AGO_TRANSLATIONS: Record<string, {
+  justNow: string;
+  mAgo: string;
+  hAgo: string;
+  dAgo: string;
+}> = {
+  en: { justNow: "just now", mAgo: "m ago", hAgo: "h ago", dAgo: "d ago" },
+  hi: { justNow: "अभी-अभी", mAgo: "मि पहले", hAgo: "घं पहले", dAgo: "दि पहले" },
+  ta: { justNow: "இப்போது தான்", mAgo: "நிமிடம் முன்பு", hAgo: "மணி முன்பு", dAgo: "நாள் முன்பு" },
+  te: { justNow: "ఇప్పుడే", mAgo: "నిమి. క్రితం", hAgo: "గం. క్రితం", dAgo: "రో. క్రితం" },
+  or: { justNow: "ଏବେ", mAgo: "ମି. ପୂର୍ବରୁ", hAgo: "ଘଣ୍ଟା ପୂର୍ବରୁ", dAgo: "ଦିନ ପୂର୍ବରୁ" },
+  mr: { justNow: "आत्ताच", mAgo: "मि पूर्वी", hAgo: "ता पूर्वी", dAgo: "दि पूर्वी" },
+  bn: { justNow: "এই মাত্র", mAgo: "মিঃ আগে", hAgo: "ঘণ্টা আগে", dAgo: "দিন আগে" },
+  gu: { justNow: "હમણાં જ", mAgo: "મિ. પહેલાં", hAgo: "ક. પહેલાં", dAgo: "દિ. પહેલાં" },
+  pa: { justNow: "ਹੁਣੇ", mAgo: "ਮਿੰਟ ਪਹਿਲਾਂ", hAgo: "ਘੰਟੇ ਪਹਿਲਾਂ", dAgo: "ਦਿਨ ਪਹਿਲਾਂ" }
+};
+
+export function timeAgo(iso: string, lang: string = "en"): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  const t = TIME_AGO_TRANSLATIONS[lang] ?? TIME_AGO_TRANSLATIONS["en"] ?? {
+    justNow: "just now", mAgo: "m ago", hAgo: "h ago", dAgo: "d ago"
+  };
+  if (mins < 1) return t.justNow;
+  if (mins < 60) return `${mins}${t.mAgo}`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return `${hrs}${t.hAgo}`;
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
+  if (days < 30) return `${days}${t.dAgo}`;
   return new Date(iso).toLocaleDateString();
 }
 
@@ -79,7 +99,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
   const trimmed = address.trim();
   if (!trimmed) return null;
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=1`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&countrycodes=in&limit=1`;
     const res = await fetch(url, {
       headers: { "Accept-Language": "en" },
     });

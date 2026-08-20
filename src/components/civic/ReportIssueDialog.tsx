@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { distanceMeters, geocodeAddress, getPosition, type Scope } from "@/lib/civic";
 import { computeBrowserImageHash, getHammingDistance } from "@/lib/imageHash";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/language";
 
 // Explicit type to eliminate any TypeScript property errors
 interface IssueItem {
@@ -336,7 +337,7 @@ export function ReportIssueDialog({
     setOpenInternal(v);
     onOpenChange?.(v);
   };
-  const [lang, setLang] = useState<LangCode>("en");
+  const { language: lang, setLanguage: setLang } = useLanguage();
   const [listening, setListening] = useState(false);
   const t = TRANSLATIONS[lang];
 
@@ -663,6 +664,7 @@ export function ReportIssueDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t.placeholderDescription}
+              className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
             />
           </div>
 

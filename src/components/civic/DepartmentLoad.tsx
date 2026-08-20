@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage, type Language, CATEGORY_NAMES } from "@/lib/language";
 
 const DEPT_META = [
   { label: "Public Works", bar: "from-[#3B82F6] to-[#60A5FA]", color: "#3B82F6" },
@@ -12,7 +13,63 @@ const DEPT_META = [
   { label: "Others", bar: "from-[#64748B] to-[#94A3B8]", color: "#64748B" },
 ];
 
+const DEPT_LOAD_TRANSLATIONS: Record<Language, {
+  title: string;
+  subTitle: string;
+  viewDetails: string;
+}> = {
+  en: {
+    title: "Department Load",
+    subTitle: "Current Active Grievances by Department",
+    viewDetails: "View Details",
+  },
+  hi: {
+    title: "विभाग कार्यभार",
+    subTitle: "विभाग द्वारा वर्तमान सक्रिय शिकायतें",
+    viewDetails: "विवरण देखें",
+  },
+  ta: {
+    title: "துறை பணிச்சுமை",
+    subTitle: "துறை வாரியாக தற்போதைய செயலில் உள்ள புகார்கள்",
+    viewDetails: "விவரங்களைப் பார்",
+  },
+  te: {
+    title: "విభాగం పనిభారం",
+    subTitle: "విభాగాల వారీగా ప్రస్తుతం క్రియాశీలంగా ఉన్న ఫిర్యాదులు",
+    viewDetails: "వివరాలు చూడండి",
+  },
+  or: {
+    title: "ବିଭାଗୀୟ କାର୍ଯ୍ୟଭାର",
+    subTitle: "ବିଭାଗ ଅନୁଯାୟୀ ସାମ୍ପ୍ରତିକ ସକ୍ରିୟ ଅଭିଯୋଗ",
+    viewDetails: "ବିବରଣୀ ଦେଖନ୍ତୁ",
+  },
+  mr: {
+    title: "विभाग कार्यभार",
+    subTitle: "विभागानुसार सध्याच्या सक्रिय तक्रारी",
+    viewDetails: "तपशील पहा",
+  },
+  bn: {
+    title: "বিভাগের কাজের চাপ",
+    subTitle: "বিভাগ অনুযায়ী বর্তমানে সক্রিয় অভিযোগসমূহ",
+    viewDetails: "বিস্তারিত দেখুন",
+  },
+  gu: {
+    title: "વિભાગીય ભારણ",
+    subTitle: "વિભાગ દ્વારા વર્તમાન સક્રિય ફરિયાદો",
+    viewDetails: "વિગતો જુઓ",
+  },
+  pa: {
+    title: "ਵਿਭਾਗ ਦਾ ਕੰਮ ਦਾ ਬੋਝ",
+    subTitle: "ਵਿਭਾਗ ਅਨੁਸਾਰ ਮੌਜੂਦਾ ਸਰਗਰਮ ਸ਼ਿਕਾਇਤਾਂ",
+    viewDetails: "ਵੇਰਵੇ ਦੇਖੋ",
+  },
+};
+
 export function DepartmentLoad() {
+  const { language } = useLanguage();
+  const t = DEPT_LOAD_TRANSLATIONS[language];
+  const tCat = CATEGORY_NAMES[language];
+
   function isAbortLike(err: unknown): boolean {
     if (err instanceof DOMException && err.name === "AbortError") return true;
     const m = err instanceof Error ? err.message : String(err ?? "");
@@ -83,11 +140,11 @@ export function DepartmentLoad() {
               <BarChart3 className="h-4.5 w-4.5 text-[#3B82F6]" strokeWidth={2.2} />
             </span>
             <h3 className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">
-              Department Load
+              {t.title}
             </h3>
           </div>
           <p className="mt-1.5 text-[12px] text-muted-foreground font-medium">
-            Current Active Grievances by Department
+            {t.subTitle}
           </p>
         </div>
         <a
@@ -95,7 +152,7 @@ export function DepartmentLoad() {
           onClick={(e) => e.preventDefault()}
           className="text-[11.5px] font-bold text-[#001F5C] dark:text-[#38BDF8] hover:underline shrink-0 mt-1"
         >
-          View Details
+          {t.viewDetails}
         </a>
       </div>
 
@@ -112,7 +169,7 @@ export function DepartmentLoad() {
             {DEPT_META.map((d) => (
               <div key={d.label} className="h-8 flex flex-col justify-start">
                 <p className="text-[9.5px] font-semibold leading-tight text-muted-foreground/50 text-center line-clamp-2">
-                  {d.label}
+                  {tCat[d.label] ?? d.label}
                 </p>
               </div>
             ))}
@@ -152,8 +209,9 @@ export function DepartmentLoad() {
             <div className="absolute inset-x-0 bottom-0 top-[11px] grid grid-cols-6 items-end gap-1.5 sm:gap-2">
               {departments.map((d) => {
                 const hPct = (d.value / topTick) * 100;
+                const translatedLabel = tCat[d.label] ?? d.label;
                 return (
-                  <div key={d.label} className="relative h-full flex items-end justify-center px-0.5">
+                  <div key={d.label} className="relative h-full flex items-end justify-center px-0.5" title={translatedLabel}>
                     <div
                       className={cn(
                         "relative w-full max-w-[44px] rounded-t-[10px] bg-gradient-to-t transition-[height] duration-700 ease-out",
@@ -183,7 +241,7 @@ export function DepartmentLoad() {
             {departments.map((d) => (
               <div key={`lbl-${d.label}`} className="h-8 flex flex-col justify-start">
                 <p className="text-[9.5px] font-semibold leading-tight text-muted-foreground dark:text-slate-400 text-center line-clamp-2">
-                  {d.label}
+                  {tCat[d.label] ?? d.label}
                 </p>
               </div>
             ))}

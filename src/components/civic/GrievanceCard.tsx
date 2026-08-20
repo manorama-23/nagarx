@@ -10,14 +10,18 @@ import {
   distanceMeters,
   formatDistance,
   scopeClass,
-  scopeLabel,
   statusClass,
-  statusLabel,
   timeAgo,
   type Scope,
   type Status,
 } from "@/lib/civic";
 import { cn } from "@/lib/utils";
+import {
+  useLanguage,
+  STATUS_LABELS,
+  SCOPE_LABELS,
+  GRIEVANCE_CARD_TRANSLATIONS,
+} from "@/lib/language";
 
 export type GrievanceRow = Tables<"grievances"> & {
   author?: { full_name: string } | null;
@@ -37,10 +41,14 @@ export function GrievanceCard({
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const voted = votedIds.has(grievance.id);
+  const { language } = useLanguage();
+  const t = GRIEVANCE_CARD_TRANSLATIONS[language];
+  const sLabel = STATUS_LABELS[language];
+  const scLabel = SCOPE_LABELS[language];
 
   const vote = useMutation({
     mutationFn: async () => {
-      if (!session) throw new Error("Sign in to upvote this report.");
+      if (!session) throw new Error(t.toastLoginToUpvote);
       if (voted) {
         const { error } = await supabase
           .from("votes")
@@ -72,17 +80,17 @@ export function GrievanceCard({
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
           <UserRound className="size-3.5" />
-          {grievance.is_anonymous ? "Anonymous" : (grievance.author?.full_name ?? "Resident")}
+          {grievance.is_anonymous ? t.anonymous : (grievance.author?.full_name ?? t.resident)}
         </span>
         <span aria-hidden>·</span>
-        <span>{timeAgo(grievance.created_at)}</span>
+        <span>{timeAgo(grievance.created_at, language)}</span>
         <span
           className={cn(
             "ml-auto rounded-full border px-2 py-0.5 text-[11px] font-medium",
             scopeClass[grievance.scope as Scope],
           )}
         >
-          {scopeLabel[grievance.scope as Scope]}
+          {scLabel[grievance.scope] ?? grievance.scope}
         </span>
         <span
           className={cn(
@@ -90,7 +98,7 @@ export function GrievanceCard({
             statusClass[grievance.status as Status],
           )}
         >
-          {statusLabel[grievance.status as Status]}
+          {sLabel[grievance.status] ?? grievance.status}
         </span>
       </div>
 
@@ -103,7 +111,7 @@ export function GrievanceCard({
         <div className="mt-4 grid grid-cols-2 gap-3">
           <figure>
             <figcaption className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Before
+              {t.before}
             </figcaption>
             {grievance.image_url ? (
               <img
@@ -114,13 +122,13 @@ export function GrievanceCard({
               />
             ) : (
               <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                No photo
+                {t.noPhoto}
               </div>
             )}
           </figure>
           <figure>
             <figcaption className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              After
+              {t.after}
             </figcaption>
             <img
               src={grievance.resolution_proof_url}
@@ -154,7 +162,7 @@ export function GrievanceCard({
         </Button>
         {dist != null && (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3.5" /> {formatDistance(dist)} away
+            <MapPin className="size-3.5" /> {formatDistance(dist)} {t.away}
           </span>
         )}
         <div className="ml-auto">{action}</div>

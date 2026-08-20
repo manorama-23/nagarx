@@ -1,6 +1,8 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useLanguage, type Language } from "@/lib/language";
+
 
 function NagarXLogo() {
   return (
@@ -723,12 +725,56 @@ function CityIllustration() {
   );
 }
 
+const HERO_TRANSLATIONS: Record<Language, {
+  subTitle: string;
+  searchPlaceholder: string;
+}> = {
+  en: {
+    subTitle: "Your Voice • Our Responsibility",
+    searchPlaceholder: "Search for grievances, departments, reports...",
+  },
+  hi: {
+    subTitle: "आपकी आवाज • हमारा दायित्व",
+    searchPlaceholder: "शिकायतें, विभाग, रिपोर्ट खोजें...",
+  },
+  ta: {
+    subTitle: "உங்கள் குரல் • எங்கள் கடமை",
+    searchPlaceholder: "புகார்கள், துறைகள், அறிக்கைகளைத் தேடுக...",
+  },
+  te: {
+    subTitle: "మీ గొంతు • మా బాధ్యత",
+    searchPlaceholder: "ఫిర్యాదులు, విభాగాలు, నివేదికల కోసం వెతకండి...",
+  },
+  or: {
+    subTitle: "ଆପଣଙ୍କ ସ୍ୱର • ଆମର ଦାୟିତ୍ୱ",
+    searchPlaceholder: "ଅଭିଯୋଗ, ବିଭାଗ କିମ୍ବା ରିପୋର୍ଟ ସନ୍ଧାନ କରନ୍ତୁ...",
+  },
+  mr: {
+    subTitle: "तुमचा आवाज • आमची जबाबदारी",
+    searchPlaceholder: "तक्रारी, विभाग, अहवाल शोधा...",
+  },
+  bn: {
+    subTitle: "আপনার কণ্ঠ • আমাদের দায়িত্ব",
+    searchPlaceholder: "অভিযোগ, বিভাগ বা রিপোর্ট খুঁজুন...",
+  },
+  gu: {
+    subTitle: "આપનો અવાજ • અમારી જવાબદારી",
+    searchPlaceholder: "ફરિયાદો, વિભાગો, અહેવાलो શોધો...",
+  },
+  pa: {
+    subTitle: "ਤੁਹਾਡੀ ਅਵਾਜ਼ • ਸਾਡੀ ਜ਼ਿੰਮੇਵਾਰੀ",
+    searchPlaceholder: "ਸ਼ਿਕਾਇਤਾਂ, ਵਿਭਾਗਾਂ, ਰਿਪੋਰਟਾਂ ਦੀ ਖੋਜ ਕਰੋ...",
+  },
+};
+
 export function DashboardHero({
   onSearch,
 }: {
   onSearch?: (query: string) => void;
 }) {
   const [q, setQ] = useState("");
+  const { language } = useLanguage();
+  const t = HERO_TRANSLATIONS[language];
 
   return (
     <section
@@ -776,7 +822,7 @@ export function DashboardHero({
               className="font-semibold tracking-wider mt-1 whitespace-nowrap text-white/80"
               style={{ fontSize: "clamp(10px, 1.15vw, 13.5px)" }}
             >
-              Your Voice • Our Responsibility
+              {t.subTitle}
             </p>
           </div>
         </div>
@@ -794,7 +840,7 @@ export function DashboardHero({
               onKeyDown={(e) => {
                 if (e.key === "Enter") onSearch?.(q);
               }}
-              placeholder="Search for grievances, departments, reports..."
+              placeholder={t.searchPlaceholder}
               className="h-12 md:h-14 w-full pl-12 md:pl-14 pr-5 md:pr-6 rounded-full bg-white text-slate-800 font-medium border-0 shadow-[0_8px_24px_rgba(0,0,0,0.25)] placeholder:text-slate-500/75 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-0 transition-all"
               style={{ fontSize: "clamp(13px, 1.2vw, 15px)" }}
             />

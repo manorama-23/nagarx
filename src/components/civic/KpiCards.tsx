@@ -1,5 +1,6 @@
 import { Megaphone, CheckCircle2, Clock3, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage, type Language } from "@/lib/language";
 
 type Trend = { dir: "up" | "down"; value: string };
 
@@ -52,6 +53,78 @@ const kpis: Kpi[] = [
   },
 ];
 
+const KPI_TRANSLATIONS: Record<Language, {
+  totalGrievances: string;
+  resolved: string;
+  inProgress: string;
+  activeUsers: string;
+  thisMonth: string;
+}> = {
+  en: {
+    totalGrievances: "Total Grievances",
+    resolved: "Resolved",
+    inProgress: "In Progress",
+    activeUsers: "Active Users",
+    thisMonth: "this month",
+  },
+  hi: {
+    totalGrievances: "कुल शिकायतें",
+    resolved: "समाधानित",
+    inProgress: "प्रगति पर",
+    activeUsers: "सक्रिय उपयोगकर्ता",
+    thisMonth: "इस महीने",
+  },
+  ta: {
+    totalGrievances: "மொத்த புகார்கள்",
+    resolved: "தீர்க்கப்பட்டது",
+    inProgress: "செயல்பாட்டில்",
+    activeUsers: "செயலில் உள்ள பயனர்கள்",
+    thisMonth: "இந்த மாதம்",
+  },
+  te: {
+    totalGrievances: "మొత్తం ఫిర్యాదులు",
+    resolved: "పరిష్కరించబడింది",
+    inProgress: "ప్రగతిలో ఉంది",
+    activeUsers: "క్రియాశీల వినియోగదారులు",
+    thisMonth: "ఈ నెల",
+  },
+  or: {
+    totalGrievances: "ସମୁଦାୟ ଅଭିଯୋଗ",
+    resolved: "ସମାଧାନ ହୋଇଛି",
+    inProgress: "ପ୍ରକ୍ରିୟାଧୀନ",
+    activeUsers: "ସକ୍ରିୟ ବ୍ୟବହାରକାରୀ",
+    thisMonth: "ଏହି ମାସ",
+  },
+  mr: {
+    totalGrievances: "एकूण तक्रारी",
+    resolved: "निवारण झाले",
+    inProgress: "प्रगतीत",
+    activeUsers: "सक्रिय वापरकर्ते",
+    thisMonth: "या महिन्यात",
+  },
+  bn: {
+    totalGrievances: "মোট অভিযোগ",
+    resolved: "মীমাংসিত",
+    inProgress: "চলমান",
+    activeUsers: "সক্রিয় ব্যবহারকারী",
+    thisMonth: "এই মাস",
+  },
+  gu: {
+    totalGrievances: "કુલ ફરિયાદો",
+    resolved: "નિવારણ થયેલ",
+    inProgress: "પ્રક્રિયા ચાલુ",
+    activeUsers: "સક્રિય વપરાશકર્તાઓ",
+    thisMonth: "આ મહિને",
+  },
+  pa: {
+    totalGrievances: "ਕੁੱਲ ਸ਼ਿਕਾਇਤਾਂ",
+    resolved: "ਹੱਲ ਕੀਤਾ",
+    inProgress: "ਚੱਲ ਰਿਹਾ ਹੈ",
+    activeUsers: "ਸਰਗਰਮ ਉਪਭੋਗਤਾ",
+    thisMonth: "ਇਸ ਮਹੀਨੇ",
+  },
+};
+
 export function KpiCards({
   totalOverride,
   resolvedOverride,
@@ -63,16 +136,23 @@ export function KpiCards({
   inProgressOverride?: number;
   activeUsersOverride?: number;
 }) {
-  const display: Kpi[] = kpis.map((k, i) => {
-    if (i === 0 && totalOverride != null)
-      return { ...k, value: totalOverride.toLocaleString() };
-    if (i === 1 && resolvedOverride != null)
-      return { ...k, value: resolvedOverride.toLocaleString() };
-    if (i === 2 && inProgressOverride != null)
-      return { ...k, value: inProgressOverride.toLocaleString() };
-    if (i === 3 && activeUsersOverride != null)
-      return { ...k, value: activeUsersOverride.toLocaleString() };
-    return k;
+  const { language } = useLanguage();
+  const t = KPI_TRANSLATIONS[language];
+
+  const display = kpis.map((k, i) => {
+    let val = k.value;
+    if (i === 0 && totalOverride != null) val = totalOverride.toLocaleString();
+    if (i === 1 && resolvedOverride != null) val = resolvedOverride.toLocaleString();
+    if (i === 2 && inProgressOverride != null) val = inProgressOverride.toLocaleString();
+    if (i === 3 && activeUsersOverride != null) val = activeUsersOverride.toLocaleString();
+
+    let label = k.label;
+    if (i === 0) label = t.totalGrievances;
+    if (i === 1) label = t.resolved;
+    if (i === 2) label = t.inProgress;
+    if (i === 3) label = t.activeUsers;
+
+    return { ...k, value: val, label };
   });
 
   return (
@@ -112,7 +192,7 @@ export function KpiCards({
                 )}
                 <span className="font-bold">{k.trend.value}</span>
                 <span className="text-muted-foreground/80 dark:text-white/50 ml-0.5">
-                  this month
+                  {t.thisMonth}
                 </span>
               </span>
             </div>

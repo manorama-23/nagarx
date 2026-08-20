@@ -1,9 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   ChevronRight,
   Zap,
-  Megaphone,
   Trash2,
   Droplets,
   TreeDeciduous,
@@ -14,9 +12,15 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { GrievanceRow } from "@/components/civic/GrievanceCard";
-import { statusClass, statusLabel, timeAgo, type Status } from "@/lib/civic";
+import { statusClass, timeAgo, type Status } from "@/lib/civic";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  useLanguage,
+  type Language,
+  CATEGORY_NAMES,
+  STATUS_LABELS,
+} from "@/lib/language";
 
 // ─── Department definitions ─────────────────────────────────────────────────
 
@@ -36,6 +40,118 @@ const navItems: NavItem[] = [
   { label: "Others", Icon: HelpCircle, color: "#64748B", bg: "bg-[#64748B]" },
 ];
 
+const LEFT_SIDEBAR_TRANSLATIONS: Record<Language, {
+  quickNavigation: string;
+  complaintPlural: string;
+  complaintSingular: string;
+  noComplaintsTitle: string;
+  noComplaintsDesc: string;
+  cardTitle: string;
+  cardDesc: string;
+  btnRaise: string;
+  btnSee: string;
+}> = {
+  en: {
+    quickNavigation: "Quick Navigation",
+    complaintPlural: "complaints",
+    complaintSingular: "complaint",
+    noComplaintsTitle: "No complaints yet",
+    noComplaintsDesc: "No problems registered in this category.",
+    cardTitle: "Together for a Better Tomorrow",
+    cardDesc: "Report local civic issues, monitor department reviews, and track resolutions.",
+    btnRaise: "Raise a Grievance",
+    btnSee: "See the Grievance",
+  },
+  hi: {
+    quickNavigation: "त्वरित नेविगेशन",
+    complaintPlural: "शिकायतें",
+    complaintSingular: "शिकायत",
+    noComplaintsTitle: "अभी कोई शिकायत नहीं",
+    noComplaintsDesc: "इस श्रेणी में कोई समस्या पंजीकृत नहीं है।",
+    cardTitle: "बेहतर कल के लिए एक साथ",
+    cardDesc: "स्थानीय नागरिक मुद्दों की रिपोर्ट करें, विभाग की समीक्षाओं की निगरानी करें और समाधानों को ट्रैक करें।",
+    btnRaise: "शिकायत दर्ज करें",
+    btnSee: "शिकायत देखें",
+  },
+  ta: {
+    quickNavigation: "விரைவான நெறிப்படுத்துதல்",
+    complaintPlural: "புகார்கள்",
+    complaintSingular: "புகார்",
+    noComplaintsTitle: "இன்னும் புகார்கள் எதுவும் இல்லை",
+    noComplaintsDesc: "இந்த பிரிவில் எந்த பிரச்சனையும் பதிவு செய்யப்படவில்லை.",
+    cardTitle: "ஒரு சிறந்த நாளைக்காக ஒன்றாக",
+    cardDesc: "உள்ளூர் குடிமைச் சிக்கல்களைப் புகாரளிக்கவும், துறை மதிப்பாய்வுகளைக் கண்காணிக்கவும், தீர்வுகளைப் பின்பற்றவும்.",
+    btnRaise: "புகார் எழுப்புக",
+    btnSee: "புகாரைப் பார்க்க",
+  },
+  te: {
+    quickNavigation: "త్వరిత నావిగేషన్",
+    complaintPlural: "ఫిర్యాదులు",
+    complaintSingular: "ఫిర్యాదు",
+    noComplaintsTitle: "ఇంకా ఎటువంటి ఫిర్యాదులు లేవు",
+    noComplaintsDesc: "ఈ విభాగంలో ఎటువంటి समस्याలు నమోదు కాలేదు.",
+    cardTitle: "మెరుగైన రేపటి కోసం కలిసి",
+    cardDesc: "స్థానిక పౌర సమస్యలను నివేదించండి, విభాగాల సమీక్షలను మరియు పరిష్కారాలను అనుసరించండి.",
+    btnRaise: "ఫిర్యాదు చేయండి",
+    btnSee: "ఫిర్యాదు చూడండి",
+  },
+  or: {
+    quickNavigation: "ତ୍ୱରିତ ନେଭିଗେସନ୍",
+    complaintPlural: "ଅଭିଯୋଗ ଗୁଡ଼ିକ",
+    complaintSingular: "ଅଭିଯୋଗ",
+    noComplaintsTitle: "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ଅଭିଯୋଗ ନାହିଁ",
+    noComplaintsDesc: "ଏହି ବର୍ଗରେ କୌଣସି ସମସ୍ୟା ପଞ୍ջିକୃତ ହୋଇନାହିଁ।",
+    cardTitle: "ଉତ୍ତମ ଆଗାମୀ କାଲି ପାଇଁ ଏକତ୍ର",
+    cardDesc: "ସ୍ଥାନୀୟ ନାଗରିକ ସମସ୍ୟାଗୁଡ଼ିକର ରିପୋର୍ଟ କରନ୍ତୁ, ବିଭାଗୀୟ ସମୀକ୍ଷା ଉପରେ ନଜର ରଖନ୍ତୁ ଏବଂ ସମାଧାନକୁ ଟ୍ରାକ୍ କରନ୍ତୁ।",
+    btnRaise: "ଅଭିଯୋଗ ଦାୟର କରନ୍ତୁ",
+    btnSee: "ଅଭିଯୋଗ ଦେଖନ୍ତୁ",
+  },
+  mr: {
+    quickNavigation: "त्वरित नॅव्हिगेशन",
+    complaintPlural: "तक्रारी",
+    complaintSingular: "तक्रार",
+    noComplaintsTitle: "अद्याप कोणतीही तक्रार नाही",
+    noComplaintsDesc: "या वर्गात कोणतीही समस्या नोंदलेली नाही.",
+    cardTitle: "उज्ज्वल उद्यासाठी एकत्र",
+    cardDesc: "स्थानिक नागरी समस्यांची तक्रार करा, विभाग पुनरावलोकनांवर लक्ष ठेवा आणि निवारण ट्रॅक करा.",
+    btnRaise: "तक्रार नोंदवा",
+    btnSee: "तक्रार पहा",
+  },
+  bn: {
+    quickNavigation: "দ্রুত নেভিগেশন",
+    complaintPlural: "অভিযোগগুলি",
+    complaintSingular: "অভিযোগ",
+    noComplaintsTitle: "এখনও কোনও অভিযোগ নেই",
+    noComplaintsDesc: "এই বিভাগে কোনও সমস্যা নিবন্ধিত নেই।",
+    cardTitle: "একটি উন্নত আগামীকালের জন্য একসঙ্গে",
+    cardDesc: "স্থানীয় নাগরিক সমস্যাগুলির রিপোর্ট করুন, বিভাগীয় পর্যালোচনাগুলি পর্যবেক্ষণ করুন এবং সমাধানগুলি অনুসরণ করুন।",
+    btnRaise: "অভিযোগ দায়ের করুন",
+    btnSee: "অভিযোগ দেখুন",
+  },
+  gu: {
+    quickNavigation: "ઝડપી નેવિગેશન",
+    complaintPlural: "ફરિયાદો",
+    complaintSingular: "ફરિયાદ",
+    noComplaintsTitle: "હજી સુધી કોઈ ફરિયાદ નથી",
+    noComplaintsDesc: "આ શ્રેણીમાં કોઈ સમસ્યા નોંધી નથી.",
+    cardTitle: "વધુ સારા આવતીકાલ માટે સાથે",
+    cardDesc: "સ્થાનિક નાગરિક સમસ્યાઓની ફરિયાદ કરો, વિભાગીય સમીક્ષાઓ પર નજર રાખો અને ઉકેલ ટ્રેક કરો.",
+    btnRaise: "ફરિયાદ દાખલ કરો",
+    btnSee: "ફરિયાદ જુઓ",
+  },
+  pa: {
+    quickNavigation: "ਤੁਰੰਤ ਨੇਵੀਗੇਸ਼ਨ",
+    complaintPlural: "ਸ਼ਿਕਾਇਤਾਂ",
+    complaintSingular: "ਸ਼ਿਕਾਇਤ",
+    noComplaintsTitle: "ਅਜੇ ਤੱਕ ਕੋਈ ਸ਼ਿਕਾਇਤ ਨਹੀਂ",
+    noComplaintsDesc: "ਇਸ ਸ਼੍ਰੇਣੀ ਵਿੱਚ ਕੋਈ ਸਮੱਸਿਆ ਦਰਜ ਨਹੀਂ ਕੀਤੀ ਗਈ ਹੈ।",
+    cardTitle: "ਬਿਹਤਰ ਭਵਿੱਖ ਲਈ ਇੱਕਠੇ",
+    cardDesc: "ਸਥਾਨਕ ਨਾਗਰਿਕ ਸਮੱਸਿਆਵਾਂ ਦੀ ਰਿਪੋਰਟ ਕਰੋ, ਵਿਭਾਗੀ ਸਮੀਖਿਆਵਾਂ ਦੀ ਨਿਗਰਾਨੀ ਕਰੋ ਅਤੇ ਹੱਲਾਂ ਨੂੰ ਟਰੈਕ ਕਰੋ।",
+    btnRaise: "ਸ਼ਿਕਾਇਤ ਦਰਜ ਕਰੋ",
+    btnSee: "ਸ਼ਿਕਾਇਤ ਦੇਖੋ",
+  },
+};
+
 // ─── Category panel ──────────────────────────────────────────────────────────
 
 function CategoryPanel({
@@ -47,6 +163,11 @@ function CategoryPanel({
   grievances: GrievanceRow[];
   onClose: () => void;
 }) {
+  const { language } = useLanguage();
+  const t = LEFT_SIDEBAR_TRANSLATIONS[language];
+  const tCat = CATEGORY_NAMES[language];
+  const sLabel = STATUS_LABELS[language];
+
   const filtered = grievances.filter(
     (g) => ((g as any).category ?? "") === item.label,
   );
@@ -59,9 +180,11 @@ function CategoryPanel({
           <item.Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13.5px] font-bold text-slate-900 dark:text-white leading-tight">{item.label}</p>
+          <p className="text-[13.5px] font-bold text-slate-900 dark:text-white leading-tight">
+            {tCat[item.label] ?? item.label}
+          </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-            {filtered.length} complaint{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} {filtered.length === 1 ? t.complaintSingular : t.complaintPlural}
           </p>
         </div>
         <button
@@ -80,8 +203,8 @@ function CategoryPanel({
               <AlertCircle className="h-6 w-6 text-slate-400" />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-slate-700 dark:text-white">No complaints yet</p>
-              <p className="text-[12px] text-slate-400 mt-0.5">No problems registered in this category.</p>
+              <p className="text-[13px] font-semibold text-slate-700 dark:text-white">{t.noComplaintsTitle}</p>
+              <p className="text-[12px] text-slate-400 mt-0.5">{t.noComplaintsDesc}</p>
             </div>
           </div>
         ) : (
@@ -100,7 +223,7 @@ function CategoryPanel({
                     statusClass[g.status as Status],
                   )}
                 >
-                  {statusLabel[g.status as Status]}
+                  {sLabel[g.status] ?? g.status}
                 </span>
               </div>
               {g.description ? (
@@ -108,7 +231,7 @@ function CategoryPanel({
                   {g.description}
                 </p>
               ) : null}
-              <p className="mt-1.5 text-[10.5px] text-slate-400 font-medium">{timeAgo(g.created_at)}</p>
+              <p className="mt-1.5 text-[10.5px] text-slate-400 font-medium">{timeAgo(g.created_at, language)}</p>
             </div>
           ))
         )}
@@ -127,6 +250,9 @@ interface LeftSidebarProps {
 
 export function LeftSidebar({ onRaiseGrievance, grievances = [], isAuthority = false }: LeftSidebarProps) {
   const [selected, setSelected] = useState<NavItem | null>(null);
+  const { language } = useLanguage();
+  const t = LEFT_SIDEBAR_TRANSLATIONS[language];
+  const tCat = CATEGORY_NAMES[language];
 
   const handleNav = (item: NavItem) => {
     setSelected((prev) => (prev?.label === item.label ? null : item));
@@ -147,7 +273,7 @@ export function LeftSidebar({ onRaiseGrievance, grievances = [], isAuthority = f
           <>
             <h3 className="text-[14px] font-bold text-slate-900 dark:text-white mb-4 tracking-tight flex items-center gap-2 shrink-0">
               <Zap className="h-[18px] w-[18px] text-[#3B82F6]" strokeWidth={2.2} />
-              Quick Navigation
+              {t.quickNavigation}
             </h3>
             <ul className="space-y-1">
               {navItems.map((item) => {
@@ -164,7 +290,7 @@ export function LeftSidebar({ onRaiseGrievance, grievances = [], isAuthority = f
                         <item.Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                       </span>
                       <span className="flex-1 text-[13.5px] font-semibold text-slate-800 dark:text-white">
-                        {item.label}
+                        {tCat[item.label] ?? item.label}
                       </span>
                       {count > 0 && (
                         <span className="text-[10.5px] font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 rounded-full px-2 py-0.5 shrink-0">
@@ -229,10 +355,10 @@ export function LeftSidebar({ onRaiseGrievance, grievances = [], isAuthority = f
           {/* Text details */}
           <div className="flex flex-col items-center text-center gap-1.5">
             <h4 className="text-[15.5px] font-extrabold text-[#0B1E43] dark:text-white leading-tight tracking-tight">
-              Together for a Better Tomorrow
+              {t.cardTitle}
             </h4>
             <p className="text-[12px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-[210px]">
-              Report local civic issues, monitor department reviews, and track resolutions.
+              {t.cardDesc}
             </p>
           </div>
 
@@ -241,7 +367,7 @@ export function LeftSidebar({ onRaiseGrievance, grievances = [], isAuthority = f
             onClick={onRaiseGrievance}
             className="w-full rounded-[14px] bg-[#001F5C] text-white hover:bg-[#001A4D] dark:bg-[#3B82F6] dark:hover:bg-[#2563EB] py-4.5 px-5 text-[13px] font-bold shadow-sm hover:shadow transition-all duration-200 hover:scale-[1.01] flex items-center justify-center gap-2"
           >
-            {isAuthority ? "See the Grievance" : "Raise a Grievance"}
+            {isAuthority ? t.btnSee : t.btnRaise}
             <ArrowRight className="h-4.5 w-4.5" strokeWidth={2.3} />
           </Button>
 
