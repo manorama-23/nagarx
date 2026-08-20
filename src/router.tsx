@@ -18,9 +18,6 @@ export const getRouter = () => {
         staleTime: 30_000,
         refetchOnWindowFocus: false,
         refetchOnMount: true,
-        refetchOnReconnect: true,
-        cancelOnUnmount: false,
-        refetchOptions: { cancelRefetch: false },
       },
       mutations: {
         retry: (failureCount, error) => {

@@ -47,6 +47,9 @@ const LANGUAGES = [
   { code: "te", name: "తెలుగు (Telugu)" },
   { code: "or", name: "ଓଡ଼ିଆ (Odia)" },
   { code: "mr", name: "मराठी (Marathi)" },
+  { code: "bn", name: "বাংলা (Bengali)" },
+  { code: "gu", name: "ગુજરાતી (Gujarati)" },
+  { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)" },
 ] as const;
 
 type LangCode = typeof LANGUAGES[number]["code"];
@@ -232,6 +235,87 @@ const TRANSLATIONS: Record<LangCode, {
       "Parks": "उद्याने / मार्ग",
       "Others": "इतर"
     }
+  },
+  bn: {
+    title: "একটি সমস্যা প্রতিবেদন করুন",
+    desc: "প্রতিবেদনগুলি সর্বজনীন এবং দায়িত্বপ্রাপ্ত কর্তৃপক্ষের কাছে পাঠানো হয়।",
+    fieldTitle: "শিরোনাম",
+    placeholderTitle: "ゲート ৩ এর কাছে ভাঙা স্ট্রিটলাইট",
+    fieldCategory: "বিভাগ",
+    fieldDescription: "বর্ণনা",
+    placeholderDescription: "কী ভুল আছে, কখন থেকে এবং কে প্রভাবিত?",
+    fieldPhoto: "ছবি",
+    placeholderPhoto: "ছবি নির্বাচন করুন বা টেনে আনুন",
+    fieldLocation: "অবস্থান",
+    btnDetect: "সনাক্ত করুন",
+    placeholderLocation: "একটি ঠিকানা, এলাকা বা ল্যান্ডমার্ক লিখুন",
+    fieldAnonymous: "বেনামে পোস্ট করুন",
+    descAnonymous: "আপনার নাম সর্বজনীনভাবে গোপন থাকবে।",
+    btnSubmit: "প্রতিবেদন জমা দিন",
+    btnSubmitting: "জমা দেওয়া হচ্ছে...",
+    similarityAlert: "সম্প্রতি কাছাকাছি একই ধরণের সমস্যা প্রতিবেদন করা হয়েছে। আপনি এর গুরুত্ব বাড়াতে পূর্বের প্রতিবেদনটিতে ভোট দিতে পারেন।",
+    categories: {
+      "Public Works": "গণপূর্ত",
+      "Sanitation": "স্বচ্ছতা",
+      "Electrical": "বৈদ্যুতিক",
+      "Water Utility": "জল সরবরাহ",
+      "Parks": "পার্ক",
+      "Others": "অন্যান্য"
+    }
+  },
+  gu: {
+    title: "સમસ્યાની જાણ કરો",
+    desc: "અહેવાલો સાર્વજનિક છે અને સંબંધિત સત્તાધિકારીને મોકલવામાં આવે છે.",
+    fieldTitle: "શીર્ષક",
+    placeholderTitle: "ગેટ 3 પાસે તૂટેલી સ્ટ્રીટલાઇટ",
+    fieldCategory: "શ્રેણી",
+    fieldDescription: "વર્ણન",
+    placeholderDescription: "શું ખોટું છે, ક્યારથી છે, અને કોણ પ્રભાવિત છે?",
+    fieldPhoto: "ફોટો",
+    placeholderPhoto: "છબી બતાવો અથવા ખેંચો",
+    fieldLocation: "સ્થาน",
+    btnDetect: "શોધો",
+    placeholderLocation: "સરનામું, વિસ્તાર કે સીમાચિહ્ન દાખલ કરો",
+    fieldAnonymous: "અનામી રીતે પોસ્ટ કરો",
+    descAnonymous: "તમારું નામ જાહેર પ્લેટફોર્મ પર છુપાયેલું રહેશે.",
+    btnSubmit: "અહેવાલ સબમિટ કરો",
+    btnSubmitting: "સમસ્યા સબમિટ થઈ રહી છે...",
+    similarityAlert: "તાજેતરમાં નજીકમાં આવી જ એક સમસ્યાની જાણ કરવામાં આવી હતી. અગ્રતા વધારવા માટે તમે તે અહેવાલ પર મત આપી શકો છો.",
+    categories: {
+      "Public Works": "જાહેર કામો",
+      "Sanitation": "સ્વચ્છતા",
+      "Electrical": "વીજળી",
+      "Water Utility": "પાણી પુરવઠો",
+      "Parks": "પાર્ક",
+      "Others": "અન્ય"
+    }
+  },
+  pa: {
+    title: "ਇੱਕ ਸਮੱਸਿਆ ਦੀ ਰਿਪੋਰਟ ਕਰੋ",
+    desc: "ਰਿਪੋਰਟਾਂ ਜਨਤਕ ਹੁੰਦੀਆਂ ਹਨ ਅਤੇ ਜ਼ਿੰਮੇਵਾਰ ਅਥਾਰਟੀ ਨੂੰ ਭੇਜੀਆਂ ਜਾਂਦੀਆਂ ਹਨ।",
+    fieldTitle: "ਸਿਰਲੇਖ",
+    placeholderTitle: "ਗੇਟ 3 ਦੇ ਕੋਲ ਟੁੱਟੀ ਹੋਈ ਸਟ੍ਰੀਟਲਾਈਟ",
+    fieldCategory: "ਸ਼੍ਰੇਣੀ",
+    fieldDescription: "ਵੇਰਵਾ",
+    placeholderDescription: "ਕੀ ਗਲਤ ਹੈ, ਕਦੋਂ ਤੋਂ ਹੈ, ਅਤੇ ਕੌਣ ਪ੍ਰਭਾਵਿਤ ਹੈ?",
+    fieldPhoto: "ਫੋਟੋ",
+    placeholderPhoto: "ਤਸਵੀਰ ਚੁਣੋ ਜਾਂ ਡਰੈਗ ਕਰੋ",
+    fieldLocation: "ਸਥਾਨ",
+    btnDetect: "ਲੱਭੋ",
+    placeholderLocation: "ਪਤਾ, ਇਲਾਕਾ ਜਾਂ ਲੈਂਡਮਾਰਕ ਦਰਜ ਕਰੋ",
+    fieldAnonymous: "ਗੁਮਨਾਮ ਰਿਪੋਰਟ ਕਰੋ",
+    descAnonymous: "ਤੁਹਾਡਾ ਨਾਮ ਜਨਤਕ ਤੌਰ 'ਤੇ ਗੁਪਤ ਰਹੇਗਾ।",
+    btnSubmit: "ਰਿਪੋਰਟ ਦਰਜ ਕਰੋ",
+    btnSubmitting: "ਦਰਜ ਹੋ ਰਿਹਾ ਹੈ...",
+    similarityAlert: "ਹਾਲ ਹੀ ਵਿੱਚ ਨੇੜੇ ਹੀ ਇੱਕ ਸਮਾਨ ਸਮੱਸਿਆ ਦੀ ਰਿਪੋਰਟ ਕੀਤੀ ਗਈ ਸੀ। ਤੁਸੀਂ ਇਸ ਨੂੰ ਹੋਰ ਮਹੱਤਵ ਦੇਣ ਲਈ ਵੋਟ ਕਰ ਸਕਦੇ ਹੋ।",
+    categories: {
+      "Public Works": "ਲੋਕ ਨਿਰਮਾਣ",
+      "Sanitation": "ਸਫਾਈ",
+      "Electrical": "ਬਿਜਲੀ",
+      "Water Utility": "ਪਾਣੀ ਦੀ ਸਹੂਲਤ",
+      "Parks": "ਪਾਰਕ",
+      "Others": "ਹੋਰ"
+    }
   }
 };
 
@@ -287,7 +371,13 @@ export function ReportIssueDialog({
                   ? "or-IN"
                   : lang === "mr"
                     ? "mr-IN"
-                    : "en-US";
+                    : lang === "bn"
+                      ? "bn-IN"
+                      : lang === "gu"
+                        ? "gu-IN"
+                        : lang === "pa"
+                          ? "pa-IN"
+                          : "en-US";
 
         recognition.onstart = () => {
           setListening(true);
